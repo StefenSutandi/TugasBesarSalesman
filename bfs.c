@@ -4,12 +4,14 @@
 #include <math.h>
 #include <time.h>
 
+#define MAX_CITIES 15
+#define EARTH_RADIUS_KM 6371.0
+
 typedef struct {
     char name[50];
     double latitude;
     double longitude;
 } City;
-
 
 double degreesToRadians(double degrees) {
     return degrees * 3.14159265358979323846 / 180.0;
@@ -29,6 +31,6 @@ double calculateDistance(City city1, City city2) {
                sin(deltaLon / 2) * sin(deltaLon / 2);
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
-    double distance = 6371 * c;
+    double distance = EARTH_RADIUS_KM * c;
     return distance;
 }

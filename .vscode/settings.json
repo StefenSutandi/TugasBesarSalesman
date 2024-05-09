@@ -60,6 +60,7 @@
     "time.h": "c",
     "stdlib.h": "c",
     "string.h": "c",
-    "typeinfo": "c"
+    "typeinfo": "c",
+    "math.h": "c"
   }
 }

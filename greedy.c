@@ -46,6 +46,7 @@ void findShortestRoute(City cities[], int numCities, int startLocation) {
         double minDist = INFINITY;
         int nextCity = -1;
 
+        // Cari kota berikutnya yang belum dikunjungi dengan jarak terdekat
         for (int j = 0; j < numCities; j++) {
             if (!visited[j]) {
                 double dist = calculateDistance(cities[currentCity], cities[j]);
@@ -61,6 +62,10 @@ void findShortestRoute(City cities[], int numCities, int startLocation) {
         currentCity = nextCity;
         minDistance += minDist;
     }
+
+    // Kembali ke kota awal (Bandung)
+    minDistance += calculateDistance(cities[route[numCities - 1]], cities[startLocation]);
+
     clock_t end = clock();
     double timeElapsed = (double)(end - start) / CLOCKS_PER_SEC;
 
