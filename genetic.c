@@ -4,11 +4,6 @@
 #include <math.h>
 #include <time.h>
 
-#define MAX_CITIES 15
-#define POP_SIZE 50
-#define MAX_GENERATIONS 1000
-#define MUTATION_RATE 0.01
-
 typedef struct {
     char name[50];
     double latitude;
@@ -16,7 +11,7 @@ typedef struct {
 } City;
 
 typedef struct {
-    int route[MAX_CITIES];
+    int route[15];
     double fitness;
 } Individual;
 
@@ -101,7 +96,7 @@ void crossover(Individual *parent1, Individual *parent2, Individual *child, int 
 void mutate(Individual *individual, int numCities) {
     // Apply Swap Mutation
     for (int i = 1; i < numCities - 1; i++) {
-        if (rand() < RAND_MAX * MUTATION_RATE) {
+        if (rand() < RAND_MAX * 0.01) {
             int j = i + 1 + rand() % (numCities - i - 1);
             int temp = individual->route[i];
             individual->route[i] = individual->route[j];
@@ -112,18 +107,18 @@ void mutate(Individual *individual, int numCities) {
 
 void geneticAlgorithm(City cities[], int numCities, int startLocation) {
     srand(time(NULL));
-    Individual population[POP_SIZE];
+    Individual population[50];
     
     // Initialize population
-    initializePopulation(population, POP_SIZE, numCities);
+    initializePopulation(population, 50, numCities);
     
     clock_t start = clock();
     double bestDistance = INFINITY;
     Individual *bestIndividual = NULL;
 
-    for (int gen = 0; gen < MAX_GENERATIONS; gen++) {
+    for (int gen = 0; gen < 1000; gen++) {
         // Evaluate fitness of each individual
-        for (int i = 0; i < POP_SIZE; i++) {
+        for (int i = 0; i < 50; i++) {
             evaluateFitness(&population[i], cities, numCities);
             if (population[i].fitness > 0 && 1.0 / population[i].fitness < bestDistance) {
                 bestDistance = 1.0 / population[i].fitness;
@@ -132,11 +127,11 @@ void geneticAlgorithm(City cities[], int numCities, int startLocation) {
         }
 
         // Create next generation
-        Individual nextGeneration[POP_SIZE];
-        for (int i = 0; i < POP_SIZE; i++) {
+        Individual nextGeneration[50];
+        for (int i = 0; i < 50; i++) {
             // Select parents using tournament selection
-            Individual *parent1 = &population[rand() % POP_SIZE];
-            Individual *parent2 = &population[rand() % POP_SIZE];
+            Individual *parent1 = &population[rand() % 50];
+            Individual *parent2 = &population[rand() % 50];
             
             // Crossover
             crossover(parent1, parent2, &nextGeneration[i], numCities);
@@ -146,7 +141,7 @@ void geneticAlgorithm(City cities[], int numCities, int startLocation) {
         }
 
         // Replace the old population with the new generation
-        memcpy(population, nextGeneration, POP_SIZE * sizeof(Individual));
+        memcpy(population, nextGeneration, 50 * sizeof(Individual));
     }
 
     clock_t end = clock();
@@ -171,7 +166,7 @@ int main() {
     char filename[50];
     char startCityName[50];
     FILE *file;
-    City cities[MAX_CITIES];
+    City cities[15];
     int numCities = 0;
     int startLocation = -1;
 
@@ -191,7 +186,7 @@ int main() {
             startLocation = numCities;
         }
         numCities++;
-        if (numCities >= MAX_CITIES) {
+        if (numCities >= 15) {
             break;
         }
     }
