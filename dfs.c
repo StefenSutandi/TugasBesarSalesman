@@ -4,9 +4,6 @@
 #include <math.h>
 #include <time.h>
 
-#define MAX_CITIES 15
-#define INF 1e9
-
 typedef struct {
     char name[50];
     double latitude;
@@ -65,10 +62,10 @@ void dfsTSP(City cities[], int numCities, int visited[], int route[], int curren
 }
 
 void findShortestRoute(City cities[], int numCities, int startLocation) {
-    int visited[MAX_CITIES] = {0};
-    int route[MAX_CITIES];
-    double minDistance = INF;
-    int bestRoute[MAX_CITIES];
+    int visited[15] = {0};
+    int route[15];
+    double minDistance = 1e9;
+    int bestRoute[15];
 
     visited[startLocation] = 1;
     route[0] = startLocation;
@@ -109,7 +106,7 @@ int main() {
     char filename[50];
     char startCityName[50];
     FILE *file;
-    City cities[MAX_CITIES];
+    City cities[15];
     int numCities = 0;
     int startLocation = -1;
 
@@ -129,7 +126,7 @@ int main() {
             startLocation = numCities;
         }
         numCities++;
-        if (numCities >= MAX_CITIES) {
+        if (numCities >= 15) {
             break;
         }
     }
