@@ -4,17 +4,10 @@
 #include <math.h>
 #include <time.h>
 
-#define MAX_CITIES 15
-#define MAX_PARTICLES 50
-#define MAX_ITERATIONS 1000
-#define INERTIA_WEIGHT 0.7
-#define PERSONAL_BEST_WEIGHT 1.4
-#define GLOBAL_BEST_WEIGHT 1.4
-
 typedef struct {
-    int position[MAX_CITIES];
+    int position[15];
     double fitness;
-    int personalBest[MAX_CITIES];
+    int personalBest[15];
     double personalBestFitness;
 } Particle;
 
@@ -76,7 +69,7 @@ void initializeParticles(Particle particles[], int numParticles, int numCities, 
 }
 
 void updateParticle(Particle *particle, int globalBest[], double globalBestFitness, int numCities, City cities[]) {
-    int initialPosition[MAX_CITIES];
+    int initialPosition[15];
     memcpy(initialPosition, particle->position, numCities * sizeof(int));
 
     for (int i = 0; i < numCities; i++) {
@@ -125,21 +118,21 @@ void localSearch2Opt(int route[], int numCities, City cities[]) {
 }
 
 void findShortestRoutePSO(City cities[], int numCities, const char startCityName[]) {
-    Particle particles[MAX_PARTICLES];
-    int globalBestRoute[MAX_CITIES];
+    Particle particles[50];
+    int globalBestRoute[15];
     double globalBestFitness = INFINITY;
     clock_t start, end;
     double timeElapsed;
 
     srand(time(NULL));
 
-    initializeParticles(particles, MAX_PARTICLES, numCities, cities);
+    initializeParticles(particles, 50, numCities, cities);
 
     start = clock();
 
-    for (int iter = 0; iter < MAX_ITERATIONS; iter++) {
+    for (int iter = 0; iter < 1000; iter++) {
         // Update global best route and fitness
-        for (int i = 0; i < MAX_PARTICLES; i++) {
+        for (int i = 0; i < 50; i++) {
             if (particles[i].fitness < globalBestFitness) {
                 globalBestFitness = particles[i].fitness;
                 memcpy(globalBestRoute, particles[i].position, numCities * sizeof(int));
@@ -147,7 +140,7 @@ void findShortestRoutePSO(City cities[], int numCities, const char startCityName
         }
 
         // Update particles' positions based on global best route
-        for (int i = 0; i < MAX_PARTICLES; i++) {
+        for (int i = 0; i < 50; i++) {
             updateParticle(&particles[i], globalBestRoute, globalBestFitness, numCities, cities);
         }
     }
@@ -168,7 +161,7 @@ void findShortestRoutePSO(City cities[], int numCities, const char startCityName
     }
 
     // Construct the final best route starting and ending at the specified city
-    int finalRoute[MAX_CITIES];
+    int finalRoute[15];
     int routeIndex = 0;
 
     // Starting from the identified start index (excluding the duplicate start)
@@ -209,7 +202,7 @@ void initializeCities(const char filename[], City cities[], int *numCities) {
 
     *numCities = 0;
     char line[256];
-    while (fgets(line, sizeof(line), file) && *numCities < MAX_CITIES) {
+    while (fgets(line, sizeof(line), file) && *numCities < 15) {
         char cityName[50];
         double latitude, longitude;
         if (sscanf(line, "%49[^,],%lf,%lf", cityName, &latitude, &longitude) == 3) {
@@ -226,7 +219,7 @@ void initializeCities(const char filename[], City cities[], int *numCities) {
 int main() {
     char filename[50];
     char startCityName[50];
-    City cities[MAX_CITIES];
+    City cities[15];
     int numCities = 0;
 
     printf("Enter list of cities file name: ");
