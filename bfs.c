@@ -1,108 +1,142 @@
 #include <stdio.h>
-#include <limits.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
-
-#define MAX_CITIES 100
+#include <stdbool.h>
+#include <limits.h>
 
 typedef struct {
     char name[50];
     double latitude;
     double longitude;
+    int numNeighbors;
+    int neighbors[15]; // Array of neighbor indices
+    double distances[15]; // Array of distances to neighbors
 } City;
 
 typedef struct {
-    int path[MAX_CITIES];
-    int distance;
-} Route;
+    int toCityIndex;
+    double distance;
+} Edge;
 
-double calculateDistance(City city1, City city2) {
-    // Calculate distance between two cities using Haversine formula
-    double lat1 = city1.latitude;
-    double lon1 = city1.longitude;
-    double lat2 = city2.latitude;
-    double lon2 = city2.longitude;
+// Queue implementation for BFS
+typedef struct {
+    int items[15];
+    int front;
+    int rear;
+} Queue;
 
-    // Convert latitude and longitude from degrees to radians
-    lat1 *= 3.14159265358979323846 / 180.0;
-    lon1 *= 3.14159265358979323846 / 180.0;
-    lat2 *= 3.14159265358979323846 / 180.0;
-    lon2 *= 3.14159265358979323846 / 180.0;
+void initQueue(Queue *q) {
+    q->front = -1;
+    q->rear = -1;
+}
 
-    // Earth radius in kilometers
-    double earthRadius = 6371.0;
+bool isEmpty(Queue *q) {
+    return (q->front == -1 && q->rear == -1);
+}
 
-    // Haversine formula to calculate distance between two points on Earth
-    double dLat = lat2 - lat1;
-    double dLon = lon2 - lon1;
-    double a = sin(dLat / 2) * sin(dLat / 2) + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
+void enqueue(Queue *q, int item) {
+    if (isEmpty(q)) {
+        q->front = 0;
+        q->rear = 0;
+    } else {
+        q->rear = (q->rear + 1) % 15;
+    }
+    q->items[q->rear] = item;
+}
+
+int dequeue(Queue *q) {
+    int item = q->items[q->front];
+    if (q->front == q->rear) {
+        q->front = -1;
+        q->rear = -1;
+    } else {
+        q->front = (q->front + 1) % 15;
+    }
+    return item;
+}
+
+double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    // Convert degrees to radians
+    double lat1_rad = lat1 * 3.14159265358979323846 / 180.0;
+    double lon1_rad = lon1 * 3.14159265358979323846 / 180.0;
+    double lat2_rad = lat2 * 3.14159265358979323846 / 180.0;
+    double lon2_rad = lon2 * 3.14159265358979323846 / 180.0;
+
+    // Haversine formula
+    double dlon = lon2_rad - lon1_rad;
+    double dlat = lat2_rad - lat1_rad;
+    double a = pow(sin(dlat / 2), 2) + cos(lat1_rad) * cos(lat2_rad) * pow(sin(dlon / 2), 2);
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    double distance = earthRadius * c;
+    double distance = 6371 * c; // Radius of Earth in km
 
     return distance;
 }
 
-void bfsTSP(City cities[], int numCities, int startCity) {
-    int visited[MAX_CITIES] = {0};
-    Route queue[MAX_CITIES * MAX_CITIES];
-    int front = 0, rear = 0;
-
-    // Initialize the queue with the starting city
-    Route initialRoute;
-    initialRoute.path[0] = startCity;
-    initialRoute.distance = 1; // Start with one city visited
-    queue[rear++] = initialRoute;
-    visited[startCity] = 1;
-
-    Route bestRoute;
-    bestRoute.distance = INT_MAX; // Initialize with a large value
-
-    while (front != rear) {
-        Route currentRoute = queue[front++];
-        int currentCity = currentRoute.path[currentRoute.distance - 1];
-        visited[currentCity] = 1;
-
-        // If we have visited all cities once and return to the start
-        if (currentRoute.distance == numCities && currentCity == startCity) {
-            if (currentRoute.distance < bestRoute.distance) {
-                bestRoute = currentRoute;
-            }
-            continue;
+void bfsShortestPath(City cities[], int numCities, const char startCityName[]) {
+    int startLocation = -1;
+    for (int i = 0; i < numCities; i++) {
+        if (strcmp(cities[i].name, startCityName) == 0) {
+            startLocation = i;
+            break;
         }
+    }
 
-        // Explore all unvisited neighboring cities
-        for (int nextCity = 0; nextCity < numCities; nextCity++) {
-            if (!visited[nextCity]) {
-                double distance = calculateDistance(cities[currentCity], cities[nextCity]);
+    if (startLocation == -1) {
+        printf("Error: Starting city '%s' not found in the list.\n", startCityName);
+        return;
+    }
 
-                // Create a new route extending the current route
-                Route newRoute = currentRoute;
-                newRoute.path[newRoute.distance++] = nextCity;
+    Queue q;
+    initQueue(&q);
+    enqueue(&q, startLocation);
 
-                // Enqueue the new route
-                queue[rear++] = newRoute;
+    double distances[15];
+    for (int i = 0; i < numCities; i++) {
+        distances[i] = INFINITY;
+    }
+    distances[startLocation] = 0;
+
+    int previous[15];
+    memset(previous, -1, sizeof(previous));
+
+    while (!isEmpty(&q)) {
+        int current = dequeue(&q);
+
+        for (int i = 0; i < cities[current].numNeighbors; i++) {
+            int neighborIndex = cities[current].neighbors[i];
+            double dist = cities[current].distances[i];
+            
+            if (distances[current] + dist < distances[neighborIndex]) {
+                distances[neighborIndex] = distances[current] + dist;
+                previous[neighborIndex] = current;
+                enqueue(&q, neighborIndex);
             }
         }
     }
 
     // Print the best route found
-    printf("Best route found: ");
-    for (int i = 0; i < numCities; i++) {
-        printf("%s", cities[bestRoute.path[i]].name);
-        if (i < numCities - 1) {
+    printf("Best route found: %s -> ", cities[startLocation].name);
+    int current = startLocation;
+    while (current != -1) {
+        printf("%s", cities[current].name);
+        current = previous[current];
+        if (current != -1) {
             printf(" -> ");
         }
     }
-    printf("\nBest route distance: %.6f km\n", bestRoute.distance);
+    printf("\n");
+
+    // Print the best route distance
+    printf("Best route distance: %.6f km\n", distances[startLocation]);
 }
 
 int main() {
     char filename[50];
     char startCityName[50];
     FILE *file;
-    City cities[MAX_CITIES];
+    City cities[15];
     int numCities = 0;
-    int startCity = -1;
 
     printf("Enter list of cities file name: ");
     scanf("%s", filename);
@@ -116,23 +150,15 @@ int main() {
     }
 
     while (fscanf(file, "%[^,],%lf,%lf\n", cities[numCities].name, &cities[numCities].latitude, &cities[numCities].longitude) != EOF) {
-        if (strcmp(cities[numCities].name, startCityName) == 0) {
-            startCity = numCities;
-        }
         numCities++;
-        if (numCities >= MAX_CITIES) {
+        if (numCities >= 15) {
             break;
         }
     }
 
     fclose(file);
 
-    if (startCity == -1) {
-        printf("Error: Starting city not found in the list.\n");
-        return 1;
-    }
-
-    bfsTSP(cities, numCities, startCity);
+    bfsShortestPath(cities, numCities, startCityName);
 
     return 0;
 }
