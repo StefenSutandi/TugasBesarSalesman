@@ -34,25 +34,39 @@ Kota kota[] = {
 
 int jumlahKotaPerFile[] = {6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
+void shuffleCities(Kota cities[], int n) {
+    for (int i = n - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        Kota temp = cities[i];
+        cities[i] = cities[j];
+        cities[j] = temp;
+    }
+}
+
 int main() {
     srand(time(NULL));
+    int numCities = sizeof(kota) / sizeof(kota[0]);
+    shuffleCities(kota, numCities);
+    int currentCityIndex = 0;
     for (int i = 0; i < 10; i++) {
         char filename[20];
         sprintf(filename, "kota_%02d.csv", i + 1);
-        int numCities = jumlahKotaPerFile[i];
+        int numCitiesInFile = jumlahKotaPerFile[i];
+        
         FILE *file = fopen(filename, "w");
         if (file == NULL) {
             printf("Gagal membuka file %s untuk ditulis.\n", filename);
             return 1;
         }
-        for (int j = 0; j < numCities; j++) {
-            int randomIndex = rand() % (sizeof(kota) / sizeof(kota[0]));
-            Kota chosenCity = kota[randomIndex];
+
+        for (int j = 0; j < numCitiesInFile; j++) {
+            Kota chosenCity = kota[currentCityIndex];
             fprintf(file, "%s,%.4lf,%.4lf\n", chosenCity.nama, chosenCity.koordinatLintang, chosenCity.koordinatBujur);
+            currentCityIndex = (currentCityIndex + 1) % numCities;
         }
 
         fclose(file);
-        printf("File %s telah dibuat dengan %d kota.\n", filename, numCities);
+        printf("File %s telah dibuat dengan %d kota berbeda.\n", filename, numCitiesInFile);
     }
 
     return 0;
