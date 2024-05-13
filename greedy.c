@@ -10,75 +10,75 @@ typedef struct {
     double longitude;
 } City;
 
-double degreesToRadians(double degrees) {
+double deg_rad(double degrees) {
     return degrees * 3.14159265358979323846 / 180.0;
 }
 
-double calculateDistance(City city1, City city2) {
-    double lat1 = degreesToRadians(city1.latitude);
-    double lon1 = degreesToRadians(city1.longitude);
-    double lat2 = degreesToRadians(city2.latitude);
-    double lon2 = degreesToRadians(city2.longitude);
+double distance(City city1, City city2) {
+    double lat1 = deg_rad(city1.latitude);
+    double lon1 = deg_rad(city1.longitude);
+    double lat2 = deg_rad(city2.latitude);
+    double lon2 = deg_rad(city2.longitude);
 
-    double deltaLat = lat2 - lat1;
-    double deltaLon = lon2 - lon1;
+    double delta_lat = lat2 - lat1;
+    double delta_lon = lon2 - lon1;
 
-    double a = sin(deltaLat / 2) * sin(deltaLat / 2) +
+    double a = sin(delta_lat / 2) * sin(delta_lat / 2) +
                cos(lat1) * cos(lat2) *
-               sin(deltaLon / 2) * sin(deltaLon / 2);
+               sin(delta_lon / 2) * sin(delta_lon / 2);
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
     double distance = 6371 * c;
     return distance;
 }
 
-void findShortestRoute(City cities[], int numCities, int startLocation) {
+void shortest_route(City cities[], int sum_cities, int start_point) {
     int visited[15] = {0};
     int route[15];
-    double minDistance = 0.0;
+    double min_distance = 0.0;
 
-    visited[startLocation] = 1;
-    route[0] = startLocation;
+    visited[start_point] = 1;
+    route[0] = start_point;
 
     clock_t start = clock();
-    int currentCity = startLocation;
-    for (int i = 1; i < numCities; i++) {
-        double minDist = INFINITY;
-        int nextCity = -1;
+    int current_city = start_point;
+    for (int i = 1; i < sum_cities; i++) {
+        double min_dist = INFINITY;
+        int next_city = -1;
 
         // Cari kota berikutnya yang belum dikunjungi dengan jarak terdekat
-        for (int j = 0; j < numCities; j++) {
+        for (int j = 0; j < sum_cities; j++) {
             if (!visited[j]) {
-                double dist = calculateDistance(cities[currentCity], cities[j]);
-                if (dist < minDist) {
-                    minDist = dist;
-                    nextCity = j;
+                double dist = distance(cities[current_city], cities[j]);
+                if (dist < min_dist) {
+                    min_dist = dist;
+                    next_city = j;
                 }
             }
         }
 
-        route[i] = nextCity;
-        visited[nextCity] = 1;
-        currentCity = nextCity;
-        minDistance += minDist;
+        route[i] = next_city;
+        visited[next_city] = 1;
+        current_city = next_city;
+        min_distance += min_dist;
     }
 
-    // Kembali ke kota awal (Bandung)
-    minDistance += calculateDistance(cities[route[numCities - 1]], cities[startLocation]);
+    // Kembali ke kota awal
+    min_distance += distance(cities[route[sum_cities - 1]], cities[start_point]);
 
     clock_t end = clock();
     double timeElapsed = (double)(end - start) / CLOCKS_PER_SEC;
 
-    printf("Best route found: %s -> ", cities[startLocation].name);
-    for (int i = 1; i < numCities; i++) {
+    printf("Best route found: %s -> ", cities[start_point].name);
+    for (int i = 1; i < sum_cities; i++) {
         printf("%s", cities[route[i]].name);
-        if (i < numCities - 1) {
+        if (i < sum_cities - 1) {
             printf(" -> ");
         }
     }
-    printf(" -> %s\n", cities[startLocation].name);
+    printf(" -> %s\n", cities[start_point].name);
 
-    printf("Best route distance: %.6f km\n", minDistance);
+    printf("Best route distance: %.6f km\n", min_distance);
     printf("Time elapsed: %.10f s\n", timeElapsed);
 }
 
@@ -87,8 +87,8 @@ int main() {
     char startCityName[50];
     FILE *file;
     City cities[15];
-    int numCities = 0;
-    int startLocation = -1;
+    int sum_cities = 0;
+    int start_point = -1;
 
     printf("Enter list of cities file name: ");
     scanf("%s", filename);
@@ -101,24 +101,24 @@ int main() {
         return 1;
     }
 
-    while (fscanf(file, "%[^,],%lf,%lf\n", cities[numCities].name, &cities[numCities].latitude, &cities[numCities].longitude) != EOF) {
-        if (strcmp(cities[numCities].name, startCityName) == 0) {
-            startLocation = numCities;
+    while (fscanf(file, "%[^,],%lf,%lf\n", cities[sum_cities].name, &cities[sum_cities].latitude, &cities[sum_cities].longitude) != EOF) {
+        if (strcmp(cities[sum_cities].name, startCityName) == 0) {
+            start_point = sum_cities;
         }
-        numCities++;
-        if (numCities >= 15) {
+        sum_cities++;
+        if (sum_cities >= 15) {
             break;
         }
     }
 
     fclose(file);
 
-    if (startLocation == -1) {
+    if (start_point == -1) {
         printf("Error: Starting city not found in the list.\n");
         return 1;
     }
 
-    findShortestRoute(cities, numCities, startLocation);
+    shortest_route(cities, sum_cities, start_point);
 
     return 0;
 }
