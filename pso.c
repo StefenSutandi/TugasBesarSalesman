@@ -1,6 +1,6 @@
 /*EL2208 Praktikum Pemecahan Masalah dengan C 2023/2024
-*Hari dan Tanggal : Senin, 13 Mei 2024
-*Nama (NIM)       : Stefen Sutandi (13222091)
+*Hari dan Tanggal : Minggu, 12 Mei 2024
+*Nama (NIM)       : Geraldo Valentino De Jesus (13222090)
 *Asisten (NIM)    : Isnaini Azhar Ramadhan Wijaya (1832016)
 *Nama File        : pso.c
 *Deskripsi        : Menyelesaikan TSP dengan Algoritma Particle Swarm Optimization
