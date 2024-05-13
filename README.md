@@ -7,10 +7,9 @@ Pemecahan Masalah pada soal ini dapat diselesaikan dengan beberapa metode altern
 3. Breadth First Search (BFS)
 4. Depth First Search (DFS)
 5. Algoritma Branch and Bound
-6. Algoritma Integer Linear Programming (ILP)
-7. Algoritma Genetika
-8. Algoritma Ant Colony Optimization
-9. Algoritma Particle Swarm Optimization
+6. Algoritma Genetika
+7. Algoritma Ant Colony Optimization
+8. Algoritma Particle Swarm Optimization
 
 Pada soal ini, rute yang dihasilkan diharapkan untuk memenuhi sifat berikut :
 1. Memberikan rute yang memenuhi syarat : Setiap kota dikunjungi tepat satu kali, tidak kurang ataupun lebih, kecuali kota keberangkatan. Kemudian, Rute diawali dan diakhiri di kota keberangkatan.
