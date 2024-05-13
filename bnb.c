@@ -94,14 +94,28 @@ void branch_and_bound(City cities[], int sum_cities, int start_point) {
         current_node.level++;
     }
 
-    best_route[sum_cities] = start_point; 
+    // Find index of start_point in best_route
+    int start_index = -1;
+    for (int i = 0; i < sum_cities; i++) {
+        if (best_route[i] == start_point) {
+            start_index = i;
+            break;
+        }
+    }
+
+    // Reorder best_route to start from the start_index
+    int *adjusted_route = (int *)malloc((sum_cities + 1) * sizeof(int));
+    for (int i = 0; i < sum_cities; i++) {
+        adjusted_route[i] = best_route[(start_index + i) % sum_cities];
+    }
+    adjusted_route[sum_cities] = adjusted_route[0]; // Complete the loop
 
     clock_t end = clock();
     double timeElapsed = (double)(end - start) / CLOCKS_PER_SEC;
 
     printf("Best route found: ");
-    for (int i = 0; i <= sum_cities; i++) { // Iterasi hingga sum_cities (termasuk kembali ke kota awal)
-        printf("%s", cities[best_route[i]].name);
+    for (int i = 0; i <= sum_cities; i++) {
+        printf("%s", cities[adjusted_route[i]].name);
         if (i < sum_cities) {
             printf(" -> ");
         }
@@ -111,6 +125,7 @@ void branch_and_bound(City cities[], int sum_cities, int start_point) {
 
     free(init_route);
     free(best_route);
+    free(adjusted_route);
 }
 
 int main() {
