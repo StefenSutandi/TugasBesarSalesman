@@ -1,3 +1,11 @@
+/*EL2208 Praktikum Pemecahan Masalah dengan C 2023/2024
+*Hari dan Tanggal : Senin, 13 Mei 2024
+*Nama (NIM)       : Stefen Sutandi (13222091)
+*Asisten (NIM)    : Isnaini Azhar Ramadhan Wijaya (1832016)
+*Nama File        : bnb.c
+*Deskripsi        : Menyelesaikan TSP dengan Algoritma Branch and Bound
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
