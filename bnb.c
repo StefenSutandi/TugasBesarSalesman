@@ -17,22 +17,22 @@ typedef struct {
     double cost;
 } Node;
 
-double degreesToRadians(double degrees) {
+double deg_rad(double degrees) {
     return degrees * 3.14159265358979323846 / 180.0;
 }
 
-double calculateDistance(City city1, City city2) {
-    double lat1 = degreesToRadians(city1.latitude);
-    double lon1 = degreesToRadians(city1.longitude);
-    double lat2 = degreesToRadians(city2.latitude);
-    double lon2 = degreesToRadians(city2.longitude);
+double distance(City city1, City city2) {
+    double lat1 = deg_rad(city1.latitude);
+    double lon1 = deg_rad(city1.longitude);
+    double lat2 = deg_rad(city2.latitude);
+    double lon2 = deg_rad(city2.longitude);
 
-    double deltaLat = lat2 - lat1;
-    double deltaLon = lon2 - lon1;
+    double delta_lat = lat2 - lat1;
+    double delta_lon = lon2 - lon1;
 
-    double a = sin(deltaLat / 2) * sin(deltaLat / 2) +
+    double a = sin(delta_lat / 2) * sin(delta_lat / 2) +
                cos(lat1) * cos(lat2) *
-               sin(deltaLon / 2) * sin(deltaLon / 2);
+               sin(delta_lon / 2) * sin(delta_lon / 2);
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
     double distance = 6371 * c;
@@ -45,65 +45,64 @@ void swap(int *a, int *b) {
     *b = temp;
 }
 
-double calculateRouteDistance(City cities[], int route[], int numCities) {
-    double totalDistance = 0.0;
-    for (int i = 0; i < numCities - 1; i++) {
-        totalDistance += calculateDistance(cities[route[i]], cities[route[i + 1]]);
+double route_distance(City cities[], int route[], int sum_cities) {
+    double total_distance = 0.0;
+    for (int i = 0; i < sum_cities - 1; i++) {
+        total_distance += distance(cities[route[i]], cities[route[i + 1]]);
     }
-    totalDistance += calculateDistance(cities[route[numCities - 1]], cities[route[0]]);
-    return totalDistance;
+    total_distance += distance(cities[route[sum_cities - 1]], cities[route[0]]);
+    return total_distance;
 }
 
-void branchAndBound(City cities[], int numCities, int startLocation) {
-    int *initialRoute = (int *)malloc(numCities * sizeof(int));
-    for (int i = 0; i < numCities; i++) {
-        initialRoute[i] = i;
+void branch_and_bound(City cities[], int sum_cities, int start_point) {
+    int *init_route = (int *)malloc(sum_cities * sizeof(int));
+    for (int i = 0; i < sum_cities; i++) {
+        init_route[i] = i;
     }
     
-    Node initialNode = {initialRoute, 0, 0.0};
-    Node currentNode = initialNode;
+    Node init_node = {init_route, 0, 0.0};
+    Node current_node = init_node;
 
-    double minDistance = INT_MAX;
-    int *bestRoute = (int *)malloc(numCities * sizeof(int));
-    memcpy(bestRoute, initialRoute, numCities * sizeof(int));
+    double min_distance = INT_MAX;
+    int *best_route = (int *)malloc(sum_cities * sizeof(int));
+    memcpy(best_route, init_route, sum_cities * sizeof(int));
 
     clock_t start = clock();
 
-    while (currentNode.level < numCities - 1) {
-        for (int i = currentNode.level + 1; i < numCities; i++) {
-            swap(&currentNode.route[currentNode.level + 1], &currentNode.route[i]);
+    while (current_node.level < sum_cities - 1) {
+        for (int i = current_node.level + 1; i < sum_cities; i++) {
+            swap(&current_node.route[current_node.level + 1], &current_node.route[i]);
 
-            double currentCost = calculateRouteDistance(cities, currentNode.route, numCities);
+            double current_cost = route_distance(cities, current_node.route, sum_cities);
 
-            if (currentCost < minDistance) {
-                memcpy(bestRoute, currentNode.route, numCities * sizeof(int));
-                minDistance = currentCost;
+            if (current_cost < min_distance) {
+                memcpy(best_route, current_node.route, sum_cities * sizeof(int));
+                min_distance = current_cost;
             }
 
-            swap(&currentNode.route[currentNode.level + 1], &currentNode.route[i]);
+            swap(&current_node.route[current_node.level + 1], &current_node.route[i]);
         }
 
-        currentNode.level++;
+        current_node.level++;
     }
 
-    // Tambahkan kembali kota awal ke akhir rute
-    bestRoute[numCities] = startLocation; // Tambahkan kembali kota awal ke akhir rute
+    best_route[sum_cities] = start_point; 
 
     clock_t end = clock();
     double timeElapsed = (double)(end - start) / CLOCKS_PER_SEC;
 
     printf("Best route found: ");
-    for (int i = 0; i <= numCities; i++) { // Iterasi hingga numCities (termasuk kembali ke kota awal)
-        printf("%s", cities[bestRoute[i]].name);
-        if (i < numCities) {
+    for (int i = 0; i <= sum_cities; i++) { // Iterasi hingga sum_cities (termasuk kembali ke kota awal)
+        printf("%s", cities[best_route[i]].name);
+        if (i < sum_cities) {
             printf(" -> ");
         }
     }
-    printf("\nBest route distance: %.6f km\n", minDistance);
+    printf("\nBest route distance: %.6f km\n", min_distance);
     printf("Time elapsed: %.10f s\n", timeElapsed);
 
-    free(initialRoute);
-    free(bestRoute);
+    free(init_route);
+    free(best_route);
 }
 
 int main() {
@@ -111,8 +110,8 @@ int main() {
     char startCityName[50];
     FILE *file;
     City cities[15];
-    int numCities = 0;
-    int startLocation = -1;
+    int sum_cities = 0;
+    int start_point = -1;
 
     printf("Enter list of cities file name: ");
     scanf("%s", filename);
@@ -125,24 +124,24 @@ int main() {
         return 1;
     }
 
-    while (fscanf(file, "%[^,],%lf,%lf\n", cities[numCities].name, &cities[numCities].latitude, &cities[numCities].longitude) != EOF) {
-        if (strcmp(cities[numCities].name, startCityName) == 0) {
-            startLocation = numCities;
+    while (fscanf(file, "%[^,],%lf,%lf\n", cities[sum_cities].name, &cities[sum_cities].latitude, &cities[sum_cities].longitude) != EOF) {
+        if (strcmp(cities[sum_cities].name, startCityName) == 0) {
+            start_point = sum_cities;
         }
-        numCities++;
-        if (numCities >= 15) {
+        sum_cities++;
+        if (sum_cities >= 15) {
             break;
         }
     }
 
     fclose(file);
 
-    if (startLocation == -1) {
+    if (start_point == -1) {
         printf("Error: Starting city not found in the list.\n");
         return 1;
     }
 
-    branchAndBound(cities, numCities, startLocation);
+    branch_and_bound(cities, sum_cities, start_point);
 
     return 0;
 }
