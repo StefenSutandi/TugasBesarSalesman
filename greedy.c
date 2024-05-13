@@ -2,7 +2,7 @@
 *Hari dan Tanggal : Senin, 13 Mei 2024
 *Nama (NIM)       : Stefen Sutandi (13222091)
 *Asisten (NIM)    : Isnaini Azhar Ramadhan Wijaya (1832016)
-*Nama File        : bnb.c
+*Nama File        : greedy.c
 *Deskripsi        : Menyelesaikan TSP dengan Algoritma Greedy
 */
 
