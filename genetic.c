@@ -1,8 +1,22 @@
+/*EL2208 Praktikum Pemecahan Masalah dengan C 2023/2024
+*Hari dan Tanggal : Senin, 13 Mei 2024
+*Nama (NIM)       : Afardhan Putra Fashadani (13222000)
+*Asisten (NIM)    : Isnaini Azhar Ramadhan Wijaya (1832016)
+*Nama File        : genetic.c
+*Deskripsi        : Menyelesaikan TSP dengan Algoritma genetika
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <time.h>
+
+#define POP_SIZE 100
+#define GEN_MAX 1000
+#define MUTATION_RATE 0.01
+#define PI 3.14159265358979323846
+#define R 6371
 
 typedef struct {
     char name[50];
@@ -11,194 +25,182 @@ typedef struct {
 } City;
 
 typedef struct {
-    int route[15];
+    int path[15]; // Asumsikan maksimum 15 kota
     double fitness;
 } Individual;
 
-double degreesToRadians(double degrees) {
-    return degrees * 3.14159265358979323846 / 180.0;
+City cities[15]; // Asumsikan maksimum 15 kota
+int num_cities;
+Individual population[POP_SIZE];
+Individual new_population[POP_SIZE];
+
+double toRadians(double degree) {
+    return degree * (PI / 180);
 }
 
-double calculateDistance(City city1, City city2) {
-    double lat1 = degreesToRadians(city1.latitude);
-    double lon1 = degreesToRadians(city1.longitude);
-    double lat2 = degreesToRadians(city2.latitude);
-    double lon2 = degreesToRadians(city2.longitude);
+double haversine(double lat1, double lon1, double lat2, double lon2) {
+    double dLat = toRadians(lat2 - lat1);
+    double dLon = toRadians(lon2 - lon1);
+    lat1 = toRadians(lat1);
+    lat2 = toRadians(lat2);
 
-    double deltaLat = lat2 - lat1;
-    double deltaLon = lon2 - lon1;
-
-    double a = sin(deltaLat / 2) * sin(deltaLat / 2) +
+    double a = sin(dLat / 2) * sin(dLat / 2) +
                cos(lat1) * cos(lat2) *
-               sin(deltaLon / 2) * sin(deltaLon / 2);
-    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+               sin(dLon / 2) * sin(dLon / 2);
+    return R * (2 * atan2(sqrt(a), sqrt(1 - a)));
+}
 
-    double distance = 6371 * c;
+double totalDistance(int path[]) {
+    double distance = 0;
+    for (int i = 0; i < num_cities - 1; i++) {
+        int from = path[i];
+        int to = path[i + 1];
+        distance += haversine(cities[from].latitude, cities[from].longitude,
+                              cities[to].latitude, cities[to].longitude);
+    }
+    distance += haversine(cities[path[num_cities - 1]].latitude, cities[path[num_cities - 1]].longitude,
+                          cities[path[0]].latitude, cities[path[0]].longitude);
     return distance;
 }
 
-void initializePopulation(Individual population[], int popSize, int numCities) {
-    for (int i = 0; i < popSize; i++) {
-        for (int j = 0; j < numCities; j++) {
-            population[i].route[j] = j;
+void initPopulation(int startCityIndex) {
+    for (int i = 0; i < POP_SIZE; i++) {
+        population[i].path[0] = startCityIndex;
+        for (int j = 1, k = 0; k < num_cities; k++) {
+            if (k != startCityIndex) population[i].path[j++] = k;
         }
-        // Randomly shuffle the route (except the first city)
-        for (int j = 1; j < numCities - 1; j++) {
-            int k = j + rand() % (numCities - j);
-            int temp = population[i].route[j];
-            population[i].route[j] = population[i].route[k];
-            population[i].route[k] = temp;
+        
+        for (int j = 1; j < num_cities; j++) {
+            int k = rand() % (num_cities - 1) + 1;
+            int temp = population[i].path[j];
+            population[i].path[j] = population[i].path[k];
+            population[i].path[k] = temp;
         }
-        population[i].fitness = 0.0;
+        
+        population[i].fitness = totalDistance(population[i].path);
     }
 }
 
-double evaluateFitness(Individual *individual, City cities[], int numCities) {
-    double totalDistance = 0.0;
-    for (int i = 0; i < numCities - 1; i++) {
-        int cityIndex1 = individual->route[i];
-        int cityIndex2 = individual->route[i + 1];
-        totalDistance += calculateDistance(cities[cityIndex1], cities[cityIndex2]);
+void selection() {
+    for (int i = 0; i < POP_SIZE; i++) {
+        int a = rand() % POP_SIZE;
+        int b = rand() % POP_SIZE;
+        new_population[i] = population[a].fitness < population[b].fitness ? population[a] : population[b];
     }
-    // Add distance back to the starting city
-    totalDistance += calculateDistance(cities[individual->route[numCities - 1]], cities[individual->route[0]]);
-    individual->fitness = 1.0 / totalDistance; // Higher fitness for shorter route
-    return totalDistance;
 }
 
-void crossover(Individual *parent1, Individual *parent2, Individual *child, int numCities) {
-    // Perform Order Crossover (OX)
-    int start = rand() % (numCities - 1);
-    int end = start + rand() % (numCities - start);
-    
-    // Copy the segment from parent1 to child
-    memcpy(child->route + start, parent1->route + start, (end - start + 1) * sizeof(int));
-    
-    // Mark used cities in the child's route
-    int usedCities[numCities];
-    memset(usedCities, 0, numCities * sizeof(int));
+void crossover(int parent1[], int parent2[], int child[]) {
+    int start = rand() % (num_cities - 1) + 1;
+    int end = rand() % (num_cities - 1) + 1;
+    if (start > end) { int temp = start; start = end; end = temp; }
+
+    int inChild[15] = {0}; // Asumsikan maksimum 15 kota
+    for (int i = 0; i < num_cities; i++) child[i] = -1;
     for (int i = start; i <= end; i++) {
-        usedCities[child->route[i]] = 1;
+        child[i] = parent1[i];
+        inChild[child[i]] = 1;
     }
-    
-    // Fill the rest of child's route with cities from parent2
-    int index = 0;
-    for (int i = 0; i < numCities; i++) {
-        if (index == start) {
-            index = end + 1;
+
+    int currentIndex = 1;
+    for (int i = 1; i < num_cities; i++) {
+        if (!inChild[parent2[i]]) {
+            while (child[currentIndex] != -1) currentIndex++;
+            child[currentIndex] = parent2[i];
         }
-        if (!usedCities[parent2->route[i]]) {
-            child->route[index++] = parent2->route[i];
+    }
+
+    child[0] = parent1[0];
+}
+
+void mutate(int path[]) {
+    for (int i = 1; i < num_cities; i++) {
+        if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+            int j = rand() % (num_cities - 1) + 1;
+            int temp = path[i];
+            path[i] = path[j];
+            path[j] = temp;
         }
     }
 }
 
-void mutate(Individual *individual, int numCities) {
-    // Apply Swap Mutation
-    for (int i = 1; i < numCities - 1; i++) {
-        if (rand() < RAND_MAX * 0.01) {
-            int j = i + 1 + rand() % (numCities - i - 1);
-            int temp = individual->route[i];
-            individual->route[i] = individual->route[j];
-            individual->route[j] = temp;
-        }
+void evolve() {
+    selection();
+    for (int i = 0; i < POP_SIZE; i += 2) {
+        crossover(new_population[i].path, new_population[i + 1].path, population[i].path);
+        crossover(new_population[i + 1].path, new_population[i].path, population[i + 1].path);
+        mutate(population[i].path);
+        mutate(population[i + 1].path);
+        population[i].fitness = totalDistance(population[i].path);
+        population[i + 1].fitness = totalDistance(population[i + 1].path);
     }
 }
 
-void geneticAlgorithm(City cities[], int numCities, int startLocation) {
-    srand(time(NULL));
-    Individual population[50];
-    
-    // Initialize population
-    initializePopulation(population, 50, numCities);
-    
-    clock_t start = clock();
-    double bestDistance = INFINITY;
-    Individual *bestIndividual = NULL;
-
-    for (int gen = 0; gen < 1000; gen++) {
-        // Evaluate fitness of each individual
-        for (int i = 0; i < 50; i++) {
-            evaluateFitness(&population[i], cities, numCities);
-            if (population[i].fitness > 0 && 1.0 / population[i].fitness < bestDistance) {
-                bestDistance = 1.0 / population[i].fitness;
-                bestIndividual = &population[i];
-            }
-        }
-
-        // Create next generation
-        Individual nextGeneration[50];
-        for (int i = 0; i < 50; i++) {
-            // Select parents using tournament selection
-            Individual *parent1 = &population[rand() % 50];
-            Individual *parent2 = &population[rand() % 50];
-            
-            // Crossover
-            crossover(parent1, parent2, &nextGeneration[i], numCities);
-            
-            // Mutate
-            mutate(&nextGeneration[i], numCities);
-        }
-
-        // Replace the old population with the new generation
-        memcpy(population, nextGeneration, 50 * sizeof(Individual));
+void loadCitiesFromFile(char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error: Could not open file %s\n", filename);
+        exit(1);
     }
 
-    clock_t end = clock();
-    double timeElapsed = (double)(end - start) / CLOCKS_PER_SEC;
+    char line[256];
+    num_cities = 0;
 
-    printf("Best route found: ");
-    for (int i = 0; i < numCities; i++) {
-        printf("%s", cities[bestIndividual->route[i]].name);
-        if (i < numCities - 1) {
-            printf(" -> ");
-        }
+    while (fgets(line, sizeof(line), file)) {
+        sscanf(line, "%[^,],%lf,%lf", cities[num_cities].name, &cities[num_cities].latitude, &cities[num_cities].longitude);
+        num_cities++;
     }
-    
-    // Print the starting point (Bandung) at the end of the route
-    printf(" -> %s\n", cities[startLocation].name);
+    fclose(file);
+}
 
-    printf("Best route distance: %.6f km\n", bestDistance);
-    printf("Time elapsed: %.10f s\n", timeElapsed);
+int findCityIndex(char *cityName) {
+    for (int i = 0; i < num_cities; i++) {
+        if (strcmp(cities[i].name, cityName) == 0) return i;
+    }
+    return -1;
 }
 
 int main() {
-    char filename[50];
-    char startCityName[50];
-    FILE *file;
-    City cities[15];
-    int numCities = 0;
-    int startLocation = -1;
+    srand(time(NULL));
+
+    char filename[100], startCity[50];
 
     printf("Enter list of cities file name: ");
     scanf("%s", filename);
     printf("Enter starting point: ");
-    scanf("%s", startCityName);
+    scanf("%s", startCity);
 
-    file = fopen(filename, "r");
-    if (file == NULL) {
-        printf("Error: File not found.\n");
-        return 1;
-    }
+    loadCitiesFromFile(filename);
 
-    while (fscanf(file, "%[^,],%lf,%lf\n", cities[numCities].name, &cities[numCities].latitude, &cities[numCities].longitude) != EOF) {
-        if (strcmp(cities[numCities].name, startCityName) == 0) {
-            startLocation = numCities;
-        }
-        numCities++;
-        if (numCities >= 15) {
-            break;
-        }
-    }
-
-    fclose(file);
-
-    if (startLocation == -1) {
+    int startCityIndex = findCityIndex(startCity);
+    if (startCityIndex == -1) {
         printf("Error: Starting city not found in the list.\n");
         return 1;
     }
 
-    geneticAlgorithm(cities, numCities, startLocation);
+    initPopulation(startCityIndex);
+
+    clock_t start_time = clock();
+
+    for (int generation = 0; generation < GEN_MAX; generation++) {
+        evolve();
+    }
+
+    clock_t end_time = clock();
+    double time_elapsed = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
+
+    Individual best = population[0];
+    for (int i = 1; i < POP_SIZE; i++) {
+        if (population[i].fitness < best.fitness) best = population[i];
+    }
+
+    printf("Best route found:\n");
+    for (int i = 0; i < num_cities; i++) {
+        printf("%s", cities[best.path[i]].name);
+        if (i < num_cities - 1) printf(" -> ");
+    }
+    printf(" -> %s\n", cities[best.path[0]].name);
+    printf("Best route distance: %lf km\n", best.fitness);
+    printf("Time elapsed: %lf s\n", time_elapsed);
 
     return 0;
 }
